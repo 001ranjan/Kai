@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.env
+*.env.local
+.DS_Store
+kormoan-ai-8f892b86598a.json
