@@ -1,247 +1,296 @@
-/* Kormoan Agent Chat Widget */
-#kormoan-agent-widget * {
-  box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  margin: 0;
-  padding: 0;
+/* ── Kormoan Intelligence Widget ─────────────────────────────────────────── */
+#ki-widget * { box-sizing: border-box; margin: 0; padding: 0; }
+#ki-widget {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Floating button */
-#kormoan-agent-btn {
+/* ── Trigger button ──────────────────────────────────────────────────────── */
+#ki-trigger {
   position: fixed;
   bottom: 28px;
   right: 28px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
+  z-index: 99998;
+  display: flex;
+  align-items: center;
+  gap: 9px;
   background: #0f0f0f;
+  color: #f0f0f0;
   border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-  z-index: 9999;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-#kormoan-agent-btn:hover {
-  transform: scale(1.08);
-  box-shadow: 0 6px 28px rgba(0,0,0,0.4);
-}
-#kormoan-agent-btn svg {
-  width: 24px;
-  height: 24px;
-  fill: #fff;
-}
-
-/* Chat window */
-#kormoan-agent-window {
-  position: fixed;
-  bottom: 96px;
-  right: 28px;
-  width: 380px;
-  height: 540px;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.18);
-  display: flex;
-  flex-direction: column;
-  z-index: 9998;
-  overflow: hidden;
-  transition: opacity 0.2s, transform 0.2s;
-}
-#kormoan-agent-window.hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(12px);
-}
-
-/* Header */
-#kormoan-agent-header {
-  background: #0f0f0f;
-  color: #fff;
-  padding: 16px 20px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-#kormoan-agent-header .ka-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #2a2a2a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  font-weight: 700;
-  color: #fff;
-  flex-shrink: 0;
-}
-#kormoan-agent-header .ka-info {
-  flex: 1;
-}
-#kormoan-agent-header .ka-name {
+  border-radius: 100px;
+  padding: 13px 20px;
   font-size: 14px;
   font-weight: 600;
-  line-height: 1.3;
-}
-#kormoan-agent-header .ka-status {
-  font-size: 11px;
-  color: #aaa;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-#kormoan-agent-header .ka-status::before {
-  content: '';
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #4ade80;
-}
-#kormoan-agent-close {
-  background: none;
-  border: none;
-  color: #aaa;
+  font-family: inherit;
   cursor: pointer;
-  font-size: 20px;
-  line-height: 1;
-  padding: 4px;
-  transition: color 0.15s;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.35);
+  transition: transform 0.2s, box-shadow 0.2s, background 0.15s;
+  letter-spacing: -0.1px;
+  white-space: nowrap;
 }
-#kormoan-agent-close:hover { color: #fff; }
-
-/* Messages */
-#kormoan-agent-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  scroll-behavior: smooth;
+#ki-trigger:hover {
+  background: #1a1a1a;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
 }
-#kormoan-agent-messages::-webkit-scrollbar { width: 4px; }
-#kormoan-agent-messages::-webkit-scrollbar-track { background: transparent; }
-#kormoan-agent-messages::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 4px; }
-
-.ka-msg {
-  display: flex;
-  gap: 8px;
-  max-width: 92%;
-}
-.ka-msg.ka-msg-user {
-  align-self: flex-end;
-  flex-direction: row-reverse;
-}
-.ka-bubble {
-  padding: 10px 14px;
-  border-radius: 14px;
-  font-size: 13.5px;
-  line-height: 1.55;
-  word-break: break-word;
-}
-.ka-msg-bot .ka-bubble {
-  background: #f3f3f3;
-  color: #1a1a1a;
-  border-bottom-left-radius: 4px;
-}
-.ka-msg-user .ka-bubble {
-  background: #0f0f0f;
-  color: #fff;
-  border-bottom-right-radius: 4px;
-}
-
-/* Typing indicator */
-.ka-typing .ka-bubble {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  padding: 12px 16px;
-}
-.ka-dot {
-  width: 7px;
-  height: 7px;
+#ki-trigger .ki-trigger-icon {
+  width: 20px;
+  height: 20px;
+  background: #fff;
   border-radius: 50%;
-  background: #aaa;
-  animation: ka-bounce 1.2s infinite;
-}
-.ka-dot:nth-child(2) { animation-delay: 0.2s; }
-.ka-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes ka-bounce {
-  0%, 80%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-6px); }
-}
-
-/* Input area */
-#kormoan-agent-input-area {
-  border-top: 1px solid #f0f0f0;
-  padding: 12px 14px;
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-  flex-shrink: 0;
-}
-#kormoan-agent-input {
-  flex: 1;
-  border: 1px solid #e8e8e8;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 13.5px;
-  resize: none;
-  outline: none;
-  max-height: 100px;
-  overflow-y: auto;
-  line-height: 1.5;
-  transition: border-color 0.15s;
-  color: #1a1a1a;
-}
-#kormoan-agent-input:focus { border-color: #0f0f0f; }
-#kormoan-agent-send {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: #0f0f0f;
-  border: none;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.15s, transform 0.15s;
 }
-#kormoan-agent-send:hover { background: #333; transform: scale(1.05); }
-#kormoan-agent-send:disabled { background: #ccc; cursor: not-allowed; transform: none; }
-#kormoan-agent-send svg { width: 16px; height: 16px; fill: #fff; }
+#ki-trigger .ki-trigger-icon svg { width: 11px; height: 11px; fill: #0f0f0f; }
 
-/* Branding footer */
-#kormoan-agent-footer {
-  padding: 6px 16px 10px;
-  text-align: center;
-  font-size: 11px;
-  color: #ccc;
-  flex-shrink: 0;
+/* ── Overlay backdrop ────────────────────────────────────────────────────── */
+#ki-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
 }
-#kormoan-agent-footer a {
-  color: #bbb;
+#ki-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── Chat modal ──────────────────────────────────────────────────────────── */
+#ki-modal {
+  background: #080808;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 680px;
+  height: 80vh;
+  max-height: 760px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+  transform: translateY(16px) scale(0.98);
+  transition: transform 0.25s ease;
+  border: 1px solid #1e1e1e;
+}
+#ki-overlay.open #ki-modal {
+  transform: translateY(0) scale(1);
+}
+
+/* Full screen on mobile */
+@media (max-width: 720px) {
+  #ki-overlay { padding: 0; align-items: flex-end; }
+  #ki-modal {
+    max-width: 100%;
+    height: 95dvh;
+    max-height: none;
+    border-radius: 20px 20px 0 0;
+    transform: translateY(24px);
+  }
+  #ki-overlay.open #ki-modal { transform: translateY(0); }
+  #ki-trigger { bottom: 20px; right: 20px; }
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+#ki-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #1a1a1a;
+  background: #0a0a0a;
+}
+.ki-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   text-decoration: none;
 }
-#kormoan-agent-footer a:hover { color: #888; }
-
-/* Mobile responsive */
-@media (max-width: 440px) {
-  #kormoan-agent-window {
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
-    border-radius: 0;
-  }
-  #kormoan-agent-btn {
-    bottom: 20px;
-    right: 20px;
-  }
+.ki-logo-mark {
+  width: 32px;
+  height: 32px;
+  background: #f0f0f0;
+  color: #0a0a0a;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
+.ki-logo-name { font-size: 13px; font-weight: 600; color: #f0f0f0; letter-spacing: -0.2px; }
+.ki-logo-tag  { font-size: 9px; font-weight: 500; color: #444; letter-spacing: 0.8px;
+  text-transform: uppercase; display: block; margin-top: -1px; }
+
+.ki-header-right { display: flex; align-items: center; gap: 12px; }
+.ki-status { display: flex; align-items: center; gap: 5px; font-size: 11px;
+  color: #666; font-weight: 500; }
+.ki-status-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80;
+  animation: ki-pulse 2.4s infinite; }
+.ki-status-dot.busy { background: #fb923c; }
+@keyframes ki-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+#ki-close {
+  background: #1a1a1a;
+  border: none;
+  color: #666;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+#ki-close:hover { background: #242424; color: #f0f0f0; }
+
+/* ── Messages ────────────────────────────────────────────────────────────── */
+#ki-messages {
+  overflow-y: auto;
+  padding: 24px 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+#ki-messages::-webkit-scrollbar { width: 3px; }
+#ki-messages::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
+
+/* Welcome */
+#ki-welcome {
+  display: flex; flex-direction: column; align-items: flex-start;
+  gap: 8px; padding: 8px 0 24px;
+  animation: ki-up .5s ease both;
+}
+.ki-eyebrow { font-size: 9px; font-weight: 600; letter-spacing: 1.8px;
+  text-transform: uppercase; color: #444; }
+#ki-welcome h2 { font-size: clamp(20px, 3.5vw, 28px); font-weight: 700;
+  letter-spacing: -0.8px; line-height: 1.2; color: #f0f0f0; }
+#ki-welcome h2 em { font-style: normal; color: #444; }
+#ki-welcome p { font-size: 13px; color: #666; max-width: 420px; line-height: 1.6; }
+
+/* Rows */
+.ki-row { display: flex; gap: 8px; animation: ki-up .22s ease both; }
+.ki-row + .ki-row { margin-top: 3px; }
+.ki-row.user { flex-direction: row-reverse; }
+.ki-row.bot + .ki-row.user,
+.ki-row.user + .ki-row.bot { margin-top: 12px; }
+
+@keyframes ki-up {
+  from { opacity:0; transform:translateY(8px) }
+  to   { opacity:1; transform:translateY(0) }
+}
+
+.ki-av {
+  width: 26px; height: 26px; border-radius: 6px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; align-self: flex-end; margin-bottom: 1px;
+}
+.ki-row.bot  .ki-av { background: #1c1c1c; color: #f0f0f0; }
+.ki-row.user .ki-av { background: #242424; color: #666; }
+
+.ki-bubble {
+  padding: 10px 14px; border-radius: 13px;
+  font-size: 13.5px; line-height: 1.65;
+  max-width: min(78%, 500px); word-break: break-word;
+}
+.ki-row.bot   .ki-bubble { background: #1c1c1c; color: #e8e8e8; border-bottom-left-radius: 4px; }
+.ki-row.user  .ki-bubble { background: #f0f0f0; color: #0a0a0a; border-bottom-right-radius: 4px; }
+.ki-row.error .ki-bubble { background: rgba(248,113,113,.08); color: #f87171;
+  border: 1px solid rgba(248,113,113,.2); border-bottom-left-radius: 4px; }
+
+/* Markdown */
+.ki-bubble p { margin-bottom: 6px; }
+.ki-bubble p:last-child { margin-bottom: 0; }
+.ki-bubble strong { font-weight: 600; }
+.ki-bubble ul,.ki-bubble ol { padding-left: 16px; margin: 5px 0; }
+.ki-bubble li { margin-bottom: 2px; }
+.ki-bubble code { background: rgba(255,255,255,.07); padding: 1px 5px;
+  border-radius: 4px; font-size: 11.5px; font-family: monospace; }
+.ki-bubble a { color: #aaa; text-decoration: underline; text-underline-offset: 3px; }
+.ki-bubble h2,.ki-bubble h3 { font-size: 12.5px; font-weight: 600; margin: 8px 0 3px; }
+.ki-bubble hr { border: none; border-top: 1px solid #2a2a2a; margin: 8px 0; }
+
+/* Typing */
+.ki-typing-row { display: flex; gap: 8px; margin-top: 12px; animation: ki-up .2s ease both; }
+.ki-typing-bubble { background: #1c1c1c; padding: 12px 15px; border-radius: 13px;
+  border-bottom-left-radius: 4px; display: flex; gap: 4px; align-items: center; }
+.ki-dot { width: 5px; height: 5px; border-radius: 50%; background: #444;
+  animation: ki-dot 1.3s infinite; }
+.ki-dot:nth-child(2) { animation-delay: .18s; }
+.ki-dot:nth-child(3) { animation-delay: .36s; }
+@keyframes ki-dot {
+  0%,80%,100%{transform:translateY(0);opacity:.35}
+  40%{transform:translateY(-4px);opacity:1}
+}
+
+/* ── Bottom ──────────────────────────────────────────────────────────────── */
+#ki-bottom { border-top: 1px solid #1a1a1a; background: #080808; }
+
+/* Chips */
+#ki-chips {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 10px 20px 0;
+  max-height: 120px; overflow: hidden;
+  transition: max-height .3s, opacity .25s, padding .3s;
+}
+#ki-chips.hidden { max-height: 0; padding-top: 0; opacity: 0; pointer-events: none; }
+
+.ki-chip {
+  background: transparent; border: 1px solid #2a2a2a; color: #666;
+  padding: 6px 12px; border-radius: 100px; font-size: 12px; font-family: inherit;
+  cursor: pointer; white-space: nowrap;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.ki-chip:hover { border-color: #555; color: #f0f0f0; background: #1c1c1c; }
+
+/* Input */
+#ki-input-area { padding: 10px 20px 16px; }
+.ki-input-wrap {
+  display: flex; align-items: flex-end; gap: 8px;
+  background: #111; border: 1px solid #2a2a2a;
+  border-radius: 12px; padding: 9px 10px;
+  transition: border-color .2s;
+}
+.ki-input-wrap:focus-within { border-color: #444; }
+
+#ki-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: #f0f0f0; font-size: 13.5px; font-family: inherit;
+  resize: none; max-height: 100px; line-height: 1.6; overflow-y: auto;
+}
+#ki-input::placeholder { color: #444; }
+#ki-input::-webkit-scrollbar { width: 0; }
+
+#ki-send {
+  width: 32px; height: 32px; border-radius: 7px; border: none;
+  background: #f0f0f0; color: #0a0a0a; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity .15s, transform .15s, background .15s;
+}
+#ki-send:hover:not(:disabled) { background: #ccc; transform: scale(1.05); }
+#ki-send:disabled { opacity: .3; cursor: not-allowed; transform: none; }
+#ki-send svg { width: 13px; height: 13px; display: block; }
+
+.ki-spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(10,10,10,.2);
+  border-top-color: #0a0a0a;
+  border-radius: 50%;
+  animation: ki-spin .7s linear infinite;
+}
+@keyframes ki-spin { to { transform:rotate(360deg) } }
+
+.ki-hint { margin-top: 6px; font-size: 10px; color: #333; text-align: center; }

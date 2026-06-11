@@ -1,232 +1,310 @@
+/* Kormoan Intelligence Widget — Ask Kora popup */
 (function () {
   'use strict';
 
-  // ── Config ──────────────────────────────────────────────────────────────────
-  // Set window.KormoanAgentConfig BEFORE loading this script to override defaults
-  var cfg = window.KormoanAgentConfig || {};
-  var API_URL = cfg.apiUrl || 'https://YOUR_SERVER_URL/api/chat'; // ← update after deploy
-  var WELCOME_MSG = cfg.welcomeMessage || "Hi! I'm Kormoan Agent. Ask me anything about our services, work, or how we can help you.";
-  var PLACEHOLDER = cfg.placeholder || 'Ask about our services...';
+  var cfg      = window.KormoanAgentConfig || {};
+  var API_URL  = (cfg.apiUrl || 'https://your-agent-domain.com').replace(/\/$/, '');
+  var WELCOME  = cfg.welcomeMessage || 'How can I help you today?';
+  var CHIPS    = cfg.chips || [
+    'What does Kormoan do?',
+    'Show me case studies',
+    'Design for AI',
+    'Book a discovery call',
+  ];
 
-  // ── Session ─────────────────────────────────────────────────────────────────
+  /* ── Session ─────────────────────────────────────────────────────────── */
   function getSessionId() {
-    var key = 'kormoan_agent_session';
-    var id = localStorage.getItem(key);
-    if (!id) {
-      id = 'ks_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-      localStorage.setItem(key, id);
-    }
-    return id;
+    var k = 'ki_session';
+    var s = sessionStorage.getItem(k);
+    if (!s) { s = 'ki-' + Math.random().toString(36).slice(2) + Date.now(); sessionStorage.setItem(k, s); }
+    return s;
   }
 
-  // ── CSS injection ────────────────────────────────────────────────────────────
-  function injectStyles() {
-    var cssUrl = (cfg.cssUrl || API_URL.replace('/api/chat', '')) + '/widget/chat.css';
-    // If relative path used, resolve from script src
+  /* ── CSS ─────────────────────────────────────────────────────────────── */
+  function loadCSS() {
+    if (document.getElementById('ki-style')) return;
+    var base = API_URL;
     var scripts = document.querySelectorAll('script[src*="chat.js"]');
-    if (scripts.length) {
-      var base = scripts[scripts.length - 1].src.replace('chat.js', '');
-      cssUrl = base + 'chat.css';
+    if (scripts.length) base = scripts[scripts.length - 1].src.replace(/chat\.js.*$/, '').replace(/\/$/, '');
+    var lnk = document.createElement('link');
+    lnk.id = 'ki-style'; lnk.rel = 'stylesheet'; lnk.href = base + '/chat.css';
+    document.head.appendChild(lnk);
+
+    if (!document.getElementById('ki-font')) {
+      var f = document.createElement('link');
+      f.id = 'ki-font'; f.rel = 'stylesheet';
+      f.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
+      document.head.appendChild(f);
     }
-    var link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = cssUrl;
-    document.head.appendChild(link);
   }
 
-  // ── Icons ────────────────────────────────────────────────────────────────────
-  var CHAT_ICON = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>';
-  var SEND_ICON = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
-  var CLOSE_ICON = '×';
-
-  // ── Build DOM ────────────────────────────────────────────────────────────────
+  /* ── Build DOM ───────────────────────────────────────────────────────── */
   function buildWidget() {
-    var wrapper = document.createElement('div');
-    wrapper.id = 'kormoan-agent-widget';
+    var root = document.createElement('div');
+    root.id = 'ki-widget';
+    root.innerHTML =
+      '<button id="ki-trigger" aria-label="Ask Kora">' +
+        '<span class="ki-trigger-icon">' +
+          '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+            '<path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>' +
+          '</svg>' +
+        '</span>' +
+        'Ask Kora' +
+      '</button>' +
 
-    wrapper.innerHTML =
-      '<button id="kormoan-agent-btn" aria-label="Chat with Kormoan Agent">' + CHAT_ICON + '</button>' +
+      '<div id="ki-overlay" role="dialog" aria-modal="true" aria-label="Kormoan Intelligence">' +
+        '<div id="ki-modal">' +
 
-      '<div id="kormoan-agent-window" class="hidden" role="dialog" aria-label="Kormoan Agent Chat">' +
-
-        '<div id="kormoan-agent-header">' +
-          '<div class="ka-avatar">K</div>' +
-          '<div class="ka-info">' +
-            '<div class="ka-name">Kormoan Agent</div>' +
-            '<div class="ka-status">Online</div>' +
+          '<div id="ki-header">' +
+            '<div class="ki-logo">' +
+              '<div class="ki-logo-mark">K</div>' +
+              '<div>' +
+                '<div class="ki-logo-name">Kormoan Intelligence</div>' +
+                '<div class="ki-logo-tag">Digital Product Advisor</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="ki-header-right">' +
+              '<div class="ki-status">' +
+                '<div class="ki-status-dot" id="ki-dot"></div>' +
+                '<span id="ki-status-txt">Online</span>' +
+              '</div>' +
+              '<button id="ki-close" aria-label="Close">' +
+                '<svg width="10" height="10" viewBox="0 0 10 10" fill="none">' +
+                  '<path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>' +
+                '</svg>' +
+              '</button>' +
+            '</div>' +
           '</div>' +
-          '<button id="kormoan-agent-close" aria-label="Close chat">' + CLOSE_ICON + '</button>' +
+
+          '<div id="ki-messages">' +
+            '<div id="ki-welcome">' +
+              '<div class="ki-eyebrow">Kormoan Intelligence</div>' +
+              '<h2>Hello. <em>How can we</em><br>help you today?</h2>' +
+              '<p>' + WELCOME + '</p>' +
+            '</div>' +
+          '</div>' +
+
+          '<div id="ki-bottom">' +
+            '<div id="ki-chips">' +
+              CHIPS.map(function (c) { return '<button class="ki-chip">' + esc(c) + '</button>'; }).join('') +
+            '</div>' +
+            '<div id="ki-input-area">' +
+              '<div class="ki-input-wrap">' +
+                '<textarea id="ki-input" rows="1" placeholder="Ask anything about Kormoan…" maxlength="1000"></textarea>' +
+                '<button id="ki-send" aria-label="Send">' + SEND_SVG + '</button>' +
+              '</div>' +
+              '<div class="ki-hint">Kormoan Intelligence · Powered by AI</div>' +
+            '</div>' +
+          '</div>' +
+
         '</div>' +
-
-        '<div id="kormoan-agent-messages" role="log" aria-live="polite"></div>' +
-
-        '<div id="kormoan-agent-input-area">' +
-          '<textarea id="kormoan-agent-input" rows="1" placeholder="' + PLACEHOLDER + '" maxlength="1000" aria-label="Type your message"></textarea>' +
-          '<button id="kormoan-agent-send" aria-label="Send message">' + SEND_ICON + '</button>' +
-        '</div>' +
-
-        '<div id="kormoan-agent-footer">Powered by <a href="https://www.kormoan.in" target="_blank">Kormoan</a></div>' +
-
       '</div>';
 
-    document.body.appendChild(wrapper);
+    document.body.appendChild(root);
   }
 
-  // ── Message rendering ────────────────────────────────────────────────────────
-  var messagesEl, inputEl, sendBtn;
-  var isLoading = false;
+  var SEND_SVG =
+    '<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+    '<path d="M2 8h12M9 3l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>';
 
-  function escapeHtml(str) {
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
-
-  function formatMessage(text) {
-    // Basic markdown: **bold**, *italic*, `code`, line breaks
-    return escapeHtml(text)
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/`(.+?)`/g, '<code style="background:#f0f0f0;padding:1px 5px;border-radius:4px;font-size:12px">$1</code>')
-      .replace(/\n/g, '<br>');
-  }
-
-  function appendMessage(role, text) {
-    var div = document.createElement('div');
-    div.className = 'ka-msg ' + (role === 'user' ? 'ka-msg-user' : 'ka-msg-bot');
-
-    var bubble = document.createElement('div');
-    bubble.className = 'ka-bubble';
-    bubble.innerHTML = formatMessage(text);
-
-    div.appendChild(bubble);
-    messagesEl.appendChild(div);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-    return div;
-  }
-
-  function showTyping() {
-    var div = document.createElement('div');
-    div.className = 'ka-msg ka-msg-bot ka-typing';
-    div.id = 'ka-typing-indicator';
-    div.innerHTML = '<div class="ka-bubble"><span class="ka-dot"></span><span class="ka-dot"></span><span class="ka-dot"></span></div>';
-    messagesEl.appendChild(div);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-  }
-
-  function removeTyping() {
-    var el = document.getElementById('ka-typing-indicator');
-    if (el) el.remove();
-  }
-
-  // ── API call ─────────────────────────────────────────────────────────────────
-  function sendMessage() {
-    if (isLoading) return;
-    var text = inputEl.value.trim();
-    if (!text) return;
-
-    inputEl.value = '';
-    inputEl.style.height = 'auto';
-    appendMessage('user', text);
-
-    isLoading = true;
-    sendBtn.disabled = true;
-    showTyping();
-
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: getSessionId(),
-        message: text,
-        pageUrl: window.location.href,
-      }),
-    })
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        removeTyping();
-        if (data.response) {
-          appendMessage('bot', data.response);
-        } else {
-          appendMessage('bot', data.error || 'Something went wrong. Please try again.');
-        }
-      })
-      .catch(function () {
-        removeTyping();
-        appendMessage('bot', "I'm having trouble connecting right now. Please try again in a moment.");
-      })
-      .finally(function () {
-        isLoading = false;
-        sendBtn.disabled = false;
-        inputEl.focus();
-      });
-  }
-
-  // ── Toggle ───────────────────────────────────────────────────────────────────
-  var isOpen = false;
-  var windowEl;
-
-  function openChat() {
-    isOpen = true;
-    windowEl.classList.remove('hidden');
-    inputEl.focus();
-    // Show welcome message on first open
-    if (messagesEl.children.length === 0) {
-      appendMessage('bot', WELCOME_MSG);
-    }
-  }
-
-  function closeChat() {
-    isOpen = false;
-    windowEl.classList.add('hidden');
-  }
-
-  // ── Init ─────────────────────────────────────────────────────────────────────
+  /* ── Wire up ─────────────────────────────────────────────────────────── */
   function init() {
-    injectStyles();
+    loadCSS();
     buildWidget();
 
-    messagesEl = document.getElementById('kormoan-agent-messages');
-    inputEl = document.getElementById('kormoan-agent-input');
-    sendBtn = document.getElementById('kormoan-agent-send');
-    windowEl = document.getElementById('kormoan-agent-window');
+    var trigger   = document.getElementById('ki-trigger');
+    var overlay   = document.getElementById('ki-overlay');
+    var closeBtn  = document.getElementById('ki-close');
+    var messages  = document.getElementById('ki-messages');
+    var welcome   = document.getElementById('ki-welcome');
+    var chips     = document.getElementById('ki-chips');
+    var input     = document.getElementById('ki-input');
+    var send      = document.getElementById('ki-send');
+    var dot       = document.getElementById('ki-dot');
+    var statusTxt = document.getElementById('ki-status-txt');
 
-    document.getElementById('kormoan-agent-btn').addEventListener('click', function () {
-      isOpen ? closeChat() : openChat();
+    var busy         = false;
+    var typingRow    = null;
+    var welcomeGone  = false;
+
+    /* Open / close */
+    function open() {
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      setTimeout(function () { input.focus(); }, 300);
+    }
+    function close() {
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    trigger.addEventListener('click', open);
+    closeBtn.addEventListener('click', close);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && overlay.classList.contains('open')) close();
     });
 
-    document.getElementById('kormoan-agent-close').addEventListener('click', closeChat);
-
-    sendBtn.addEventListener('click', sendMessage);
-
-    inputEl.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-
-    // Auto-resize textarea
-    inputEl.addEventListener('input', function () {
+    /* Auto-grow textarea */
+    input.addEventListener('input', function () {
       this.style.height = 'auto';
       this.style.height = Math.min(this.scrollHeight, 100) + 'px';
     });
-
-    // Close on outside click
-    document.addEventListener('click', function (e) {
-      if (
-        isOpen &&
-        !windowEl.contains(e.target) &&
-        e.target.id !== 'kormoan-agent-btn' &&
-        !document.getElementById('kormoan-agent-btn').contains(e.target)
-      ) {
-        closeChat();
-      }
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
     });
+    send.addEventListener('click', handleSend);
+
+    /* Chips */
+    chips.querySelectorAll('.ki-chip').forEach(function (chip) {
+      chip.addEventListener('click', function () { sendMessage(chip.textContent.trim()); });
+    });
+
+    /* Scroll */
+    function scrollBottom() { messages.scrollTop = messages.scrollHeight; }
+
+    /* Append */
+    function appendMessage(role, html) {
+      var row    = document.createElement('div');
+      row.className = 'ki-row ' + (role === 'user' ? 'user' : role === 'error' ? 'error bot' : 'bot');
+
+      var av     = document.createElement('div');
+      av.className = 'ki-av';
+      av.textContent = role === 'user' ? 'Y' : 'K';
+
+      var bubble = document.createElement('div');
+      bubble.className = 'ki-bubble';
+      bubble.innerHTML = html;
+      bubble.querySelectorAll('a').forEach(function (a) { a.target = '_blank'; a.rel = 'noopener noreferrer'; });
+
+      if (role === 'user') { row.appendChild(bubble); row.appendChild(av); }
+      else                 { row.appendChild(av); row.appendChild(bubble); }
+
+      messages.appendChild(row);
+      scrollBottom();
+    }
+
+    /* Typing */
+    function showTyping() {
+      typingRow = document.createElement('div');
+      typingRow.className = 'ki-typing-row';
+      typingRow.innerHTML =
+        '<div class="ki-av" style="background:#1c1c1c;color:#f0f0f0">K</div>' +
+        '<div class="ki-typing-bubble">' +
+          '<div class="ki-dot"></div><div class="ki-dot"></div><div class="ki-dot"></div>' +
+        '</div>';
+      messages.appendChild(typingRow);
+      scrollBottom();
+    }
+    function hideTyping() { if (typingRow) { typingRow.remove(); typingRow = null; } }
+
+    /* Busy state */
+    function setBusy(b) {
+      busy = b;
+      send.disabled = b;
+      input.disabled = b;
+      dot.classList.toggle('busy', b);
+      statusTxt.textContent = b ? 'Thinking…' : 'Online';
+      send.innerHTML = b
+        ? '<div class="ki-spinner"></div>'
+        : SEND_SVG;
+    }
+
+    /* Send */
+    function handleSend() {
+      var text = input.value.trim();
+      if (!text || busy) return;
+      input.value = '';
+      input.style.height = 'auto';
+      sendMessage(text);
+    }
+
+    function sendMessage(text) {
+      if (busy) return;
+
+      /* Hide welcome + chips on first send */
+      if (!welcomeGone) {
+        welcomeGone = true;
+        welcome.style.display = 'none';
+        chips.classList.add('hidden');
+      }
+
+      appendMessage('user', esc(text));
+      setBusy(true);
+      showTyping();
+
+      fetch(API_URL + '/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: getSessionId(),
+          message: text,
+          pageUrl: window.location.href,
+        }),
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          hideTyping();
+          if (data.response) {
+            appendMessage('bot', renderMd(data.response));
+          } else {
+            appendMessage('error', esc(data.error || 'Something went wrong. Please try again.'));
+          }
+        })
+        .catch(function () {
+          hideTyping();
+          appendMessage('error', 'Connection error. Please check your network and try again.');
+        })
+        .finally(function () {
+          setBusy(false);
+          input.focus();
+        });
+    }
   }
 
+  /* ── Helpers ─────────────────────────────────────────────────────────── */
+  function esc(t) {
+    return (t + '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                   .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function inline(t) {
+    return esc(t)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`(.+?)`/g, '<code>$1</code>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g,
+        '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  }
+
+  function renderMd(text) {
+    var lines = text.split('\n');
+    var out = [];
+    var ulBuf = [];
+
+    function flushList() {
+      if (!ulBuf.length) return;
+      out.push('<ul>' + ulBuf.map(function (l) { return '<li>' + inline(l) + '</li>'; }).join('') + '</ul>');
+      ulBuf = [];
+    }
+
+    lines.forEach(function (line) {
+      if (/^[-*] /.test(line)) {
+        ulBuf.push(line.replace(/^[-*] /, ''));
+      } else {
+        flushList();
+        if      (/^### /.test(line)) out.push('<h3>' + inline(line.slice(4)) + '</h3>');
+        else if (/^## /.test(line))  out.push('<h2>' + inline(line.slice(3)) + '</h2>');
+        else if (/^---$/.test(line)) out.push('<hr/>');
+        else if (line.trim())        out.push('<p>' + inline(line) + '</p>');
+      }
+    });
+    flushList();
+    return out.join('');
+  }
+
+  /* ── Boot ────────────────────────────────────────────────────────────── */
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
