@@ -11,7 +11,7 @@ let postsCache: CacheEntry<WpPost[]> | null = null;
 let pagesCache: CacheEntry<WpPage[]> | null = null;
 let portfolioCache: CacheEntry<WpPortfolio[]> | null = null;
 
-const BASE = 'https://kormoan.in/wp-json/ai/v1';
+const BASE = 'https://www.kormoan.in/wp-json/ai/v1';
 const WP_POSTS_URL     = `${BASE}/all-posts`;
 const WP_PAGES_URL     = `${BASE}/all-pages`;
 const WP_PORTFOLIO_URL = `${BASE}/all-portfolio`;

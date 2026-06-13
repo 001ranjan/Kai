@@ -43,8 +43,8 @@ Tool routing:
 - Getting full detail on a specific item when you have its ID → fetch_item_details
 
 Data sources:
-- Posts: https://kormoan.in/wp-json/ai/v1/all-posts
-- Pages: https://kormoan.in/wp-json/ai/v1/all-pages
+- Posts: https://www.kormoan.in/wp-json/ai/v1/all-posts
+- Pages: https://www.kormoan.in/wp-json/ai/v1/all-pages
 - Portfolio: https://www.kormoan.in/wp-json/ai/v1/all-portfolio
 - Single item: https://www.kormoan.in/wp-json/ai/v1/post/{id}
 
