@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import { runAgent } from '../agent';
+import { getItemById } from '../tools/cache';
 
 const router = Router();
 
@@ -7,6 +8,8 @@ interface ChatBody {
   sessionId?: string;
   message?: string;
   pageUrl?: string;
+  chipId?: number;
+  chipType?: string;
 }
 
 const INJECTION_PATTERNS = [
@@ -28,7 +31,7 @@ function isInjectionAttempt(text: string): boolean {
 }
 
 router.post('/', async (req: Request<{}, {}, ChatBody>, res: Response) => {
-  const { sessionId, message, pageUrl } = req.body;
+  const { sessionId, message, pageUrl, chipId, chipType } = req.body;
 
   if (!sessionId || typeof sessionId !== 'string') {
     res.status(400).json({ error: 'sessionId is required' });
@@ -52,10 +55,22 @@ router.post('/', async (req: Request<{}, {}, ChatBody>, res: Response) => {
     return;
   }
 
+  let finalMessage = message.trim();
+  if (chipId && Number(chipId) > 0) {
+    try {
+      const details = await getItemById(Number(chipId));
+      if (details && details.content) {
+        finalMessage = `[Selected Context: "${details.title}" (${details.type || chipType || 'unknown'})]\n\nContext details:\n${details.content}\n\nUser query: ${finalMessage}`;
+      }
+    } catch (err) {
+      console.warn(`[chat route] Failed to retrieve context for chipId ${chipId}:`, err);
+    }
+  }
+
   try {
     const response = await runAgent({
       sessionId: sessionId.trim(),
-      userMessage: message.trim(),
+      userMessage: finalMessage,
       pageUrl: typeof pageUrl === 'string' ? pageUrl : '',
     });
 

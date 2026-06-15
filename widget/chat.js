@@ -161,6 +161,46 @@
       chip.addEventListener('click', function () { sendMessage(chip.textContent.trim()); });
     });
 
+    function renderChips(list) {
+      chips.innerHTML = '';
+      list.forEach(function (c) {
+        var btn = document.createElement('button');
+        btn.className = 'ki-chip';
+        var label = typeof c === 'string' ? c : c.label;
+        var msg = typeof c === 'string' ? c : c.message;
+        var id = typeof c === 'object' ? c.id : null;
+        var type = typeof c === 'object' ? c.type : null;
+
+        btn.textContent = label;
+        btn.addEventListener('click', function () {
+          sendMessage(msg, id ? { id: id, type: type } : null);
+        });
+        chips.appendChild(btn);
+      });
+    }
+
+    if (window.fetch) {
+      fetch(API_URL + '/api/chips')
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          var newChips = [];
+          if (data.questions && data.questions.length) {
+            newChips.push(data.questions[0]);
+            newChips.push(data.questions[1]);
+          }
+          if (data.expertise && data.expertise.length) {
+            newChips.push(data.expertise[0]);
+            if (data.expertise[1]) newChips.push(data.expertise[1]);
+          }
+          if (newChips.length) {
+            renderChips(newChips);
+          }
+        })
+        .catch(function (err) {
+          console.warn('[Widget] Failed to load dynamic chips:', err);
+        });
+    }
+
     /* Scroll */
     function scrollBottom() { messages.scrollTop = messages.scrollHeight; }
 
@@ -220,7 +260,7 @@
       sendMessage(text);
     }
 
-    function sendMessage(text) {
+    function sendMessage(text, chipInfo) {
       if (busy) return;
 
       /* Hide welcome + chips on first send */
@@ -234,14 +274,20 @@
       setBusy(true);
       showTyping();
 
+      var body = {
+        sessionId: getSessionId(),
+        message: text,
+        pageUrl: window.location.href,
+      };
+      if (chipInfo && chipInfo.id) {
+        body.chipId = Number(chipInfo.id);
+        body.chipType = chipInfo.type;
+      }
+
       fetch(API_URL + '/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: getSessionId(),
-          message: text,
-          pageUrl: window.location.href,
-        }),
+        body: JSON.stringify(body),
       })
         .then(function (res) { return res.json(); })
         .then(function (data) {

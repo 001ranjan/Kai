@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import chatRouter from './routes/chat';
+import chipsRouter from './routes/chips';
 import { ensureHeaders } from './sheets';
 
 const app = express();
@@ -45,6 +46,9 @@ app.get('/health', (_req, res) => {
 
 // Chat endpoint
 app.use('/api/chat', chatRouter);
+
+// Chips endpoint
+app.use('/api/chips', chipsRouter);
 
 app.listen(PORT, async () => {
   console.log(`\nKormoan Agent server running on port ${PORT}`);
